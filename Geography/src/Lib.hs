@@ -38,7 +38,7 @@ grtCirDist (Coord lat1 lon1) (Coord lat2 lon2) =
     f = ((pi / 180) *)
 
 
-data Node = Node { nodeId :: Int, coord :: Coord } deriving (Eq, Ord, Show)
+type Node = Int
 
 data OD = Node :->: Node deriving (Eq, Ord, Show)
 infixr 5 :->:
@@ -46,11 +46,12 @@ infixr 5 :->:
 instance Semigroup OD where
   (<>) (n1 :->: n2) (n3 :->: n4)
     | n2 == n3 = n1 :->: n4
-    | otherwise = error "Semigroup OD Error."
+    | otherwise = error "Semigroup OD error"
 
+{-
 directDist :: OD -> Dist
 directDist ((coord -> c1) :->: (coord -> c2)) = grtCirDist c1 c2
-
+-}
 
 
 data Graph = Edge OD | Graph (V.Vector OD) deriving (Eq, Show)
@@ -73,24 +74,17 @@ instance Semigroup Graph where
 
 
 
-type Cost = Double
+data Cost = Cost { costOrg :: Double, cost :: Double, costDest :: Double } deriving (Eq, Show)
 
-data Link = Link OD Cost Graph deriving (Eq, Show)
+instance Ord Cost where
+  c1 <= c2 = costOrg c1 + cost c1 + costDest c1 <= costOrg c2 + cost c2 + costDest c2
 
-instance Ord Link where
-
+data Link = Link OD Cost Graph deriving (Eq, Ord, Show)
 
 instance Semigroup Link where
-  Link od1 g1 c1 <> Link od2 g2 c2
-    | od1 == od2 = Link (od1 <> od2) (g1 <> g2) (c1 + c2)
-
-type Network = Map.Map OD Link
-
-type Path = Network
-
-compose :: Graph -> OD
-compose (Edge od) = od
-compose (Graph v) = foldr1 (<>) v
+  Link od1 (Cost co1 c1 _) g1 <> Link od2 (Cost _ c2 cd2) g2
+    | od1 == od2 = Link od1 (Cost co1 (c1 + c2) cd2) (g1 <> g2)
+    | otherwise = error "Semigroup Link error"
 
 composeLink :: Link -> OD
-composeLink (Link g _) = compose g
+composeLink (Link _ _ g) = compose g
