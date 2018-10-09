@@ -3,9 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 
-module Path
-    ( grtCirDist
-    ) where
+module Path where
 
 import           Data.Semigroup (Semigroup(..))
 import qualified Data.Vector    as V
@@ -21,16 +19,7 @@ data OD = OD Coord Coord deriving (Eq, Show, Ord)
 
 type Dist = Double
 
-{-
-grtCirDist :: Coord -> Coord -> Dist
-grtCirDist (Coord lat1 lon1) (Coord lat2 lon2) =
-  6378137 * acos (sin lat1Rad * sin lat2Rad + cos lat1Rad * cos lat2Rad * cos (lon1Rad - lon2Rad))
-  where
-    lat1Rad = lat1 * pi / 180
-    lon1Rad = lon1 * pi / 180
-    lat2Rad = lat2 * pi / 180
-    lon2Rad = lon2 * pi / 180
--}
+
 
 grtCirDist :: Coord -> Coord -> Dist
 grtCirDist (Coord lat1 lon1) (Coord lat2 lon2) =
@@ -49,10 +38,9 @@ instance Semigroup Link where
     | n2 == n3 = n1 :->: n4
     | otherwise = error "Semigroup Link error"
 
-{-
-directDist :: Link -> Dist
-directDist ((coord -> c1) :->: (coord -> c2)) = grtCirDist c1 c2
--}
+isNextLink :: Link -> Link -> Bool
+(n3 :->: n4) `isNextLink` (n1 :->: n2) = n2 == n3 && n1 /= n4
+
 
 
 data Graph = Edge Link | Graph (V.Vector Link) deriving (Eq, Show)
@@ -75,21 +63,34 @@ instance Semigroup Graph where
 
 
 
-data Cost = Cost { costOrg :: Double, cost :: Double, costDest :: Double } deriving (Eq, Show)
+data Cost = Cost { costOrg :: Double, costLink :: Double, costDest :: Double } deriving (Eq, Show)
 
 instance Ord Cost where
-  c1 <= c2 = costOrg c1 + cost c1 + costDest c1 <= costOrg c2 + cost c2 + costDest c2
+  c1 <= c2 = costOrg c1 + costLink c1 + costDest c1 <= costOrg c2 + costLink c2 + costDest c2
 
-data Path = Path OD Cost Graph deriving (Eq, Ord, Show)
+data Path = Path { cost :: Cost, graph :: Graph } deriving (Eq, Ord, Show)
 
 instance Semigroup Path where
-  Path od1 (Cost co1 c1 _) g1 <> Path od2 (Cost _ c2 cd2) g2
-    | od1 == od2 = Path od1 (Cost co1 (c1 + c2) cd2) (g1 <> g2)
-    | otherwise = error "Semigroup Path error"
+  Path (Cost co1 c1 _) g1 <> Path (Cost _ c2 cd2) g2 = Path (Cost co1 (c1 + c2) cd2) (g1 <> g2)
 
---composePath :: Path -> Link
---composePath (Path _ _ g) = compose g
+composePath :: Path -> Link
+composePath (Path _ g) = compose g
 
 
 
 type Network = Set.Set Path
+
+shortestPath :: Link -> Network -> Path
+shortestPath = go Map.empty
+  where
+    go :: Map.Map Link Path -> Link -> Network -> Path
+    go pm l0 (Set.deleteFindMin -> (p, nw))
+      | l == l0 = p
+      | otherwise = go (Map.insert l p pm) l0 nw1
+      where
+        l = composePath p
+
+        ps1 = (p <>) . snd <$> filter (\(l2, _) -> Map.notMember (l <> l2) pm) (Map.assocs $ Map.filterWithKey (\l2 _ -> l2 `isNextLink` l) pm)
+        ps2 = (<> p) . snd <$> filter (\(l1, _) -> Map.notMember (l1 <> l) pm) (Map.assocs $ Map.filterWithKey (\l1 _ -> l `isNextLink` l1) pm)
+
+        nw1 = foldr Set.insert nw (ps1 <> ps2)
