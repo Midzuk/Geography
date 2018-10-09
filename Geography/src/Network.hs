@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 
-module Network
+module Lib
     ( grtCirDist
     ) where
 
