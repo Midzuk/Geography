@@ -3,20 +3,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 
-module Network
+module Path
     ( grtCirDist
     ) where
 
 import           Data.Semigroup (Semigroup(..))
 import qualified Data.Vector    as V
 import qualified Data.Map.Lazy  as Map
-
+import qualified Data.Set       as Set
 
 
 
 type Lat = Double
 type Lon = Double
 data Coord = Coord { lat :: Lat, lon :: Lon } deriving (Eq, Show, Ord)
+data OD = OD Coord Coord deriving (Eq, Show, Ord)
 
 type Dist = Double
 
@@ -40,24 +41,24 @@ grtCirDist (Coord lat1 lon1) (Coord lat2 lon2) =
 
 type Node = Int
 
-data OD = Node :->: Node deriving (Eq, Ord, Show)
+data Link = Node :->: Node deriving (Eq, Ord, Show)
 infixr 5 :->:
 
-instance Semigroup OD where
+instance Semigroup Link where
   (<>) (n1 :->: n2) (n3 :->: n4)
     | n2 == n3 = n1 :->: n4
-    | otherwise = error "Semigroup OD error"
+    | otherwise = error "Semigroup Link error"
 
 {-
-directDist :: OD -> Dist
+directDist :: Link -> Dist
 directDist ((coord -> c1) :->: (coord -> c2)) = grtCirDist c1 c2
 -}
 
 
-data Graph = Edge OD | Graph (V.Vector OD) deriving (Eq, Show)
+data Graph = Edge Link | Graph (V.Vector Link) deriving (Eq, Show)
 
-compose :: Graph -> OD
-compose (Edge od) = od
+compose :: Graph -> Link
+compose (Edge l) = l
 compose (Graph v) = foldr1 (<>) v
 
 instance Ord Graph where
@@ -79,12 +80,16 @@ data Cost = Cost { costOrg :: Double, cost :: Double, costDest :: Double } deriv
 instance Ord Cost where
   c1 <= c2 = costOrg c1 + cost c1 + costDest c1 <= costOrg c2 + cost c2 + costDest c2
 
-data Link = Link OD Cost Graph deriving (Eq, Ord, Show)
+data Path = Path OD Cost Graph deriving (Eq, Ord, Show)
 
-instance Semigroup Link where
-  Link od1 (Cost co1 c1 _) g1 <> Link od2 (Cost _ c2 cd2) g2
-    | od1 == od2 = Link od1 (Cost co1 (c1 + c2) cd2) (g1 <> g2)
-    | otherwise = error "Semigroup Link error"
+instance Semigroup Path where
+  Path od1 (Cost co1 c1 _) g1 <> Path od2 (Cost _ c2 cd2) g2
+    | od1 == od2 = Path od1 (Cost co1 (c1 + c2) cd2) (g1 <> g2)
+    | otherwise = error "Semigroup Path error"
 
-composeLink :: Link -> OD
-composeLink (Link _ _ g) = compose g
+--composePath :: Path -> Link
+--composePath (Path _ _ g) = compose g
+
+
+
+type Network = Set.Set Path
