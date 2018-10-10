@@ -90,7 +90,7 @@ shortestPath = go Map.empty
       where
         l = composePath p
 
-        ps1 = (p <>) . snd <$> filter (\(l2, _) -> Map.notMember (l <> l2) pm) (Map.assocs $ Map.filterWithKey (\l2 _ -> l2 `isNextLink` l) pm)
-        ps2 = (<> p) . snd <$> filter (\(l1, _) -> Map.notMember (l1 <> l) pm) (Map.assocs $ Map.filterWithKey (\l1 _ -> l `isNextLink` l1) pm)
+        ps = (p <>) . snd <$> filter (\(l2, _) -> Map.notMember (l <> l2) pm) (Map.assocs $ Map.filterWithKey (\l2 _ -> l2 `isNextLink` l) pm)
+        --ps2 = (<> p) . snd <$> filter (\(l1, _) -> Map.notMember (l1 <> l) pm) (Map.assocs $ Map.filterWithKey (\l1 _ -> l `isNextLink` l1) pm)
 
-        nw1 = foldr Set.insert nw (ps1 <> ps2)
+        nw1 = foldr Set.insert nw ps -- (ps1 <> ps2)
