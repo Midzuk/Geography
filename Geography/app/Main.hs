@@ -16,7 +16,7 @@ main = do
   lc <- decodeLinkCsv "/output/simple_links.csv"
   nc <- decodeNodeCsv "/output/simple_nodes.csv"
   
-  print $ shortestPathCSV od nc lc
+  print . cost $ shortestPathCSV od nc lc
 
   {-
   cd <- Dir.getCurrentDirectory

@@ -63,7 +63,10 @@ instance Semigroup Graph where
 
 
 
-data Cost = Cost { costOrg :: Double, costLink :: Double, costDest :: Double } deriving (Eq, Show)
+data Cost = Cost { costOrg :: Double, costLink :: Double, costDest :: Double } deriving (Eq)
+
+instance Show Cost where
+  show c = show (costOrg c) <> "," <> show (costLink c) <> "," <> show (costDest c)
 
 instance Ord Cost where
   c1 <= c2 = costOrg c1 + costLink c1 + costDest c1 <= costOrg c2 + costLink c2 + costDest c2
