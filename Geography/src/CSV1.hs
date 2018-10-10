@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 
-module CSV where
+module CSV1 where
 
 import qualified Data.ByteString.Lazy as B
 import           Data.Csv             (FromNamedRecord (..), Header,
@@ -17,19 +17,18 @@ import qualified Data.Set             as Set
 import           Data.Foldable        (minimumBy)
 import           Data.Function        (on) 
 
---import           Path                 (Node, Dist, Path(..), Coord(..), Network, Link(..), OD(..), Lat, Lon, grtCirDist, Graph(..), Cost(..), shortestPath)
-import AStar
+import           Path                 (Node, Dist, Path(..), Coord(..), Network, Link(..), OD(..), Lat, Lon, grtCirDist, Graph(..), Cost(..), shortestPath)
 
 
 
-type Origin = Node
-type Destination = Node
+type Org = Node
+type Dest = Node
 
 type Highway = Maybe T.Text
 type Bridge = Maybe T.Text
 type Width = Maybe T.Text
 
-data LinkCsvOut = LinkCsvOut Origin Destination Distance deriving (Show)
+data LinkCsvOut = LinkCsvOut Org Dest Dist deriving (Show)
 
 instance FromNamedRecord LinkCsvOut where
   parseNamedRecord m =
@@ -51,7 +50,7 @@ decodeLinkCsv fp = do
 
 
 
-data NodeCsvOut = NodeCsvOut Node Latitude Longitude deriving Show
+data NodeCsvOut = NodeCsvOut Node Lat Lon deriving Show
 
 instance FromNamedRecord NodeCsvOut where
   parseNamedRecord m =
@@ -70,23 +69,24 @@ decodeNodeCsv fp = do
 
 
 type NodeCsv =
-  Map.Map Node Coordinates
+  Map.Map Node Coord
 
 makeNodeCsv :: V.Vector NodeCsvOut -> NodeCsv
 makeNodeCsv = foldr f Map.empty
   where
-    f (NodeCsvOut n lat lon) = Map.insert n $ Coordinates lat lon
+    f (NodeCsvOut n lat lon) = Map.insert n $ Coord lat lon
 
 
 
 makeNetwork :: OD -> NodeCsv -> LinkCsv -> Network
 makeNetwork od@(OD c1 c2) nc = foldr f Set.empty
   where
-    f (LinkCsvOut org dest dist) = Set.insert $ Path (Cost dist cd) [org :->: dest]
+    f (LinkCsvOut org dest dist) = Set.insert $ Path (Cost co dist cd) (Edge (org :->: dest))
       where
+        co = grtCirDist c1 (nc Map.! org)
         cd = grtCirDist (nc Map.! dest) c2
 
-nearestNode :: Bool -> Coordinates -> NodeCsv -> LinkCsv -> Node
+nearestNode :: Bool -> Coord -> NodeCsv -> LinkCsv -> Node
 nearestNode b c (Map.assocs -> ncs) lc = fst . minimumBy (compare `on` snd) $ fmap (grtCirDist c) <$> ncs1
   where
     f (LinkCsvOut org dest _) =

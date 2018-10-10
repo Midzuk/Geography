@@ -3,7 +3,7 @@ module Main where
 import qualified System.Directory     as Dir
 import           System.Environment
 
-import Path
+import AStar
 import CSV
 
 main :: IO ()
@@ -11,7 +11,7 @@ main = do
   args <- getArgs
 
   let [latOrg, lonOrg, latDest, lonDest] = read <$> args
-  let od = OD (Coord latOrg lonOrg) (Coord latDest lonDest)
+  let od = OD (Coordinates latOrg lonOrg) (Coordinates latDest lonDest)
 
   lc <- decodeLinkCsv "/output/simple_links.csv"
   nc <- decodeNodeCsv "/output/simple_nodes.csv"
