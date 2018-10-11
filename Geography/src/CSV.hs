@@ -104,12 +104,24 @@ makeLink (OD c1 c2) nc lc = ( nodeId org :->: dest $ dist, distOrg, distDest)
   where
     org = nearestNode c1 nc lc
     dest = nearestNode c2 nc lc
-
     dist = grtCirDist (coordinates org) (coordinates dest)
     distOrg = grtCirDist c1 (coordinates org)
     distDest = grtCirDist c2 (coordinates dest)
 
-shortestPathCSV :: OD -> NodeCsv -> LinkCsv -> Path
-shortestPathCSV od nc lc = shortestPath l (makeLinks nc lc)
+shortestPathCSV :: OD -> NodeCsv -> LinkCsv -> (Path, Distance, Distance)
+shortestPathCSV od nc lc = (shortestPath l (makeLinks nc lc), dorg, ddest)
   where
-    (l, dorg, ddest) = makeLink od nc lc
+    (l, dorg, ddest) = makeLink od nc lc :: (Link, Distance, Distance)
+    
+
+encodePath :: NodeCsv -> Path -> String
+encodePath nc (graph -> g) =
+  "node_id,latitude,longitude"
+    <> foldr
+      (\ ni str ->
+          str
+            <> "\n"
+            <> show ni <> ","
+            <> show (latitude $ nc Map.! ni) <> ","
+            <> show (longitude $ nc Map.! ni))
+      "" g

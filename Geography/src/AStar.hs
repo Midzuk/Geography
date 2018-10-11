@@ -57,8 +57,10 @@ compose g = foldr1 (<>) g
 
 data Cost = Cost { costLink :: Distance, costDest :: Distance } deriving (Eq)
 
+{-
 instance Show Cost where
   show c = show (costLink c) <> "," <> show (costDest c)
+-}
 
 instance Ord Cost where
   c1 `compare` c2 =
@@ -73,7 +75,7 @@ instance Semigroup Cost where
       { costLink = costLink c1 + costLink c2
       , costDest = costDest c2 }
 
-data Path = Path { cost :: Cost, endNode :: NodeId, graph :: Graph } deriving (Eq, Show)
+data Path = Path { cost :: Cost, endNode :: NodeId, graph :: Graph } deriving (Eq)
 
 instance Ord Path where
   p1 `compare` p2 =
