@@ -51,7 +51,7 @@ decodeLinkCsv fp = do
 
 
 
-data NodeCsvOut = NodeCsvOut Node Latitude Longitude deriving Show
+data NodeCsvOut = NodeCsvOut NodeId Latitude Longitude deriving Show
 
 instance FromNamedRecord NodeCsvOut where
   parseNamedRecord m =
@@ -79,30 +79,37 @@ makeNodeCsv = foldr f Map.empty
 
 
 
-makeNetwork :: OD -> NodeCsv -> LinkCsv -> Network
-makeNetwork od@(OD c1 c2) nc = foldr f Set.empty
+makeLinks :: NodeCsv -> LinkCsv -> V.Vector Link
+makeLinks nc = foldr f []
   where
-    f (LinkCsvOut org dest dist) = Set.insert $ Path (Cost dist cd) [org :->: Node dest c]
+    f (LinkCsvOut org dest dist) = V.cons (org :->: Node dest c $ dist)  
       where
         c = nc Map.! dest
-        cd = grtCirDist c c2
 
-nearestNode :: Coordinates -> NodeCsv -> LinkCsv -> NodeId --Bool -> Coordinates -> NodeCsv -> LinkCsv -> NodeId
-nearestNode c (Map.assocs -> ncs) lc = fst . minimumBy (compare `on` snd) $ fmap (grtCirDist c) <$> ncs --ncs1でなくてもOK?
+nearestNode :: Coordinates -> NodeCsv -> LinkCsv -> Node --Bool -> Coordinates -> NodeCsv -> LinkCsv -> NodeId
+nearestNode c (Map.assocs -> ncs) lc = Node { nodeId = ni, coordinates = c1 } -- ncs1でなくてもOK?
   where
+    (ni, c1) = minimumBy (compare `on` (snd . fmap (grtCirDist c))) ncs
+    {-
     f (LinkCsvOut org dest _) =
       if True -- b
         then org
         else dest
         
     ncs1 = filter (\(n, _) -> n `V.elem` (f <$> lc)) ncs
+    -}
 
-makeLink :: OD -> NodeCsv -> LinkCsv -> Link
-makeLink (OD c1 c2) nc lc = org :->: (Node dest c)
+makeLink :: OD -> NodeCsv -> LinkCsv -> (Link, Distance, Distance)
+makeLink (OD c1 c2) nc lc = ( nodeId org :->: dest $ dist, distOrg, distDest)
   where
     org = nearestNode c1 nc lc
     dest = nearestNode c2 nc lc
-    c = nc Map.! dest
+
+    dist = grtCirDist (coordinates org) (coordinates dest)
+    distOrg = grtCirDist c1 (coordinates org)
+    distDest = grtCirDist c2 (coordinates dest)
 
 shortestPathCSV :: OD -> NodeCsv -> LinkCsv -> Path
-shortestPathCSV od nc lc = shortestPath (makeLink od nc lc) $ makeNetwork od nc lc
+shortestPathCSV od nc lc = shortestPath l (makeLinks nc lc)
+  where
+    (l, dorg, ddest) = makeLink od nc lc
