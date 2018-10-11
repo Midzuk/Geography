@@ -4,6 +4,7 @@
 
 
 module Path where
+{-
 
 import           Data.Semigroup (Semigroup(..))
 import qualified Data.Vector    as V
@@ -97,3 +98,4 @@ shortestPath = go Map.empty
         ps2 = (<> p) . snd <$> filter (\(l1, _) -> Map.notMember (l1 <> l) pm) (Map.assocs $ Map.filterWithKey (\l1 _ -> l `isNextLink` l1) pm)
 
         nw1 = foldr Set.insert nw (ps1 <> ps2)
+-}

@@ -5,6 +5,7 @@
 
 module CSV1 where
 
+{-
 import qualified Data.ByteString.Lazy as B
 import           Data.Csv             (FromNamedRecord (..), Header,
                                         decodeByName, (.:))
@@ -101,3 +102,4 @@ makeLink (OD c1 c2) nc lc = nearestNode True c1 nc lc :->: nearestNode False c2 
 
 shortestPathCSV :: OD -> NodeCsv -> LinkCsv -> Path
 shortestPathCSV od nc lc = shortestPath (makeLink od nc lc) $ makeNetwork od nc lc
+-}

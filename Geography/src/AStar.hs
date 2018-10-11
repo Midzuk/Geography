@@ -25,18 +25,23 @@ grtCirDist (Coordinates lat1 lon1) (Coordinates lat2 lon2) =
   where
     f = ((pi / 180) *)
 
-type Node = Int
+--type Node = Int
+type NodeId = Int
+data Node = Node { nodeId :: NodeId, coordinates :: Coordinates }
 
-data Link = (:->:) { origin :: Node, destination :: Node } deriving (Eq, Ord, Show)
+--data Link = (:->:) { origin :: Node, destination :: Node } deriving (Eq, Ord, Show)
+--infixr 5 :->:
+
+data Link = (:->:) { origin :: NodeId, destination :: Node } deriving (Eq, Ord, Show)
 infixr 5 :->:
 
 instance Semigroup Link where
-  (<>) (n1 :->: n2) (n3 :->: n4)
-    | n2 == n3 = n1 :->: n4
+  (<>) (ni1 :->: (nodeId -> ni2)) (ni3 :->: n4)
+    | ni2 == ni3 = ni1 :->: n4
     | otherwise = error "Semigroup Link error"
 
 isNextLink :: Link -> Link -> Bool
-(n3 :->: n4) `isNextLink` (n1 :->: n2) = n2 == n3 && n1 /= n4
+(ni3 :->: (nodeId -> ni4)) `isNextLink` (ni1 :->: (nodeId -> ni2)) = ni2 == ni3 && ni1 /= ni4
 
 type Graph = V.Vector Link
 
@@ -63,6 +68,16 @@ composePath (Path _ g) = compose g
 
 type Network = Set.Set Path
 
+shortestPath :: Link -> V.Vector Link -> Path
+shortestPath l ls = go Set.empty l ls
+  where
+    org = origin l
+    (ls, rls) = V.partition (\_l -> ((==) )
+    go (Set.deleteFindMin -> (p, rps)) l ls =
+      undefined
+    where
+      org = undefined
+{-
 shortestPath :: Link -> Set.Set Path -> Path
 shortestPath l ps = go psi pso
   where
@@ -75,3 +90,4 @@ shortestPath l ps = go psi pso
         if compose (graph p1) == l
           then p1
           else go (psi1 <> (Set.map (p1 <>) psi2)) pso2 
+-}

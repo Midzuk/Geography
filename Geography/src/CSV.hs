@@ -22,8 +22,8 @@ import AStar
 
 
 
-type Origin = Node
-type Destination = Node
+type Origin = NodeId
+type Destination = NodeId
 
 type Highway = Maybe T.Text
 type Bridge = Maybe T.Text
@@ -70,34 +70,39 @@ decodeNodeCsv fp = do
 
 
 type NodeCsv =
-  Map.Map Node Coordinates
+  Map.Map NodeId Coordinates
 
 makeNodeCsv :: V.Vector NodeCsvOut -> NodeCsv
 makeNodeCsv = foldr f Map.empty
   where
-    f (NodeCsvOut n lat lon) = Map.insert n $ Coordinates lat lon
+    f (NodeCsvOut ni lat lon) = Map.insert ni $ Coordinates lat lon
 
 
 
 makeNetwork :: OD -> NodeCsv -> LinkCsv -> Network
 makeNetwork od@(OD c1 c2) nc = foldr f Set.empty
   where
-    f (LinkCsvOut org dest dist) = Set.insert $ Path (Cost dist cd) [org :->: dest]
+    f (LinkCsvOut org dest dist) = Set.insert $ Path (Cost dist cd) [org :->: Node dest c]
       where
-        cd = grtCirDist (nc Map.! dest) c2
+        c = nc Map.! dest
+        cd = grtCirDist c c2
 
-nearestNode :: Bool -> Coordinates -> NodeCsv -> LinkCsv -> Node
-nearestNode b c (Map.assocs -> ncs) lc = fst . minimumBy (compare `on` snd) $ fmap (grtCirDist c) <$> ncs1
+nearestNode :: Coordinates -> NodeCsv -> LinkCsv -> NodeId --Bool -> Coordinates -> NodeCsv -> LinkCsv -> NodeId
+nearestNode c (Map.assocs -> ncs) lc = fst . minimumBy (compare `on` snd) $ fmap (grtCirDist c) <$> ncs --ncs1でなくてもOK?
   where
     f (LinkCsvOut org dest _) =
-      if b
+      if True -- b
         then org
         else dest
         
     ncs1 = filter (\(n, _) -> n `V.elem` (f <$> lc)) ncs
 
 makeLink :: OD -> NodeCsv -> LinkCsv -> Link
-makeLink (OD c1 c2) nc lc = nearestNode True c1 nc lc :->: nearestNode False c2 nc lc
+makeLink (OD c1 c2) nc lc = org :->: (Node dest c)
+  where
+    org = nearestNode c1 nc lc
+    dest = nearestNode c2 nc lc
+    c = nc Map.! dest
 
 shortestPathCSV :: OD -> NodeCsv -> LinkCsv -> Path
 shortestPathCSV od nc lc = shortestPath (makeLink od nc lc) $ makeNetwork od nc lc
