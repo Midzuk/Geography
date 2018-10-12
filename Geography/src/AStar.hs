@@ -116,11 +116,14 @@ shortestPath target ls_ = go ps_ rls_
     go (Set.deleteFindMin -> (p, rps)) ls
       | endNode p == nodeId (destination target) = p
       | otherwise =
-        let
-          (nls, rls) = V.partition ((endNode p ==) . origin) ls
-          ps = V.foldr Set.insert Set.empty $ (p <>) . makePath (destination target) <$> nls
-        in
-          go (rps <> ps) rls
+        case nls of
+          [] -> go rps rls
+          _ -> go (rps <> ps) rls
+      where
+        (nls, rls) = V.partition ((endNode p ==) . origin) ls
+        ps = V.foldr Set.insert Set.empty $ (p <>) . makePath (destination target) <$> nls
+
+
 {-
 shortestPath :: Link -> Set.Set Path -> Path
 shortestPath l ps = go psi pso
