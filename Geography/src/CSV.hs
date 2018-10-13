@@ -57,8 +57,8 @@ instance FromNamedRecord NodeCsvOut where
   parseNamedRecord m =
     NodeCsvOut
       <$> m .: "node_id"
-      <*> m .: "lat"
-      <*> m .: "lon"
+      <*> m .: "latitude"
+      <*> m .: "longitude"
 
 decodeNodeCsv :: FilePath -> IO NodeCsv
 decodeNodeCsv fp = do
